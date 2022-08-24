@@ -96,17 +96,18 @@ def mi_funcion_ramp(vmax, dc, ff, ph, nn, fs):
 Signal0 = mi_funcion_ramp(vmax, dc, ff, ph*0, nn, fs)
 Signal1 = mi_funcion_ramp(vmax, dc, ff, ph*62, nn, fs)
 Signal2 = mi_funcion_ramp(vmax, dc, ff, ph*62, nn, fs)
-# Signal4 = mi_funcion_step(vmax, dc, ff, ph*0, nn, fs)
+Signal4 = mi_funcion_step(vmax, dc, ff, ph*0, nn, fs)
 
+Signal = np.asarray(Signal0)
 # Signal = mi_funcion_cos(vmax, dc, ff, ph, nn, fs)
 
 # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
-plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
-plt.plot(Signal4[0],Signal4[1])
+# plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
+plt.plot(Signal[0],Signal[1])
 plt.xlabel('tiempo [s]')
 plt.ylabel('Volt [V]')
 plt.axis('tight')
-plt.show() 
+plt.show()
 
 
 
