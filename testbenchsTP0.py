@@ -19,14 +19,13 @@ import matplotlib.pyplot as plt
 # tt= np.arange()
 
    
-#     return (tt, xx)
-vmax=3          #Amplitud Maxima [Volts]
-dc=1            #Valor de continua [Volts]
-ff=10           #Frecuencia en [Hz][]
-ph=np.pi*0      #Fase [rad]
-nn=1000         #Muestras del ADC
-fs=1000         #Frecuencia de muestreio del ADC [Hz]         
-# Ts=1/Fs
+vmax=1          #Amplitud Maxima [Volts]
+dc=0            #Valor de continua [Volts]
+ff=10 #Frecuencia en [Hz][]
+ph=np.pi*1   #Fase [rad]
+nn=100   #Muestras del ADC
+fs=100 #Frecuencia de muestreio del ADC [Hz]         
+Ts=1/fs
 
 
 def mi_funcion_sen(vmax, dc, ff, ph, nn, fs):
