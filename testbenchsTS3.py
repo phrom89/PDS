@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy.fft import fft
+import scipy.signal as sig
 # import pdsmodulos asph pds
 
 # def mi_funcion_sen (vmax, dc, ff, ph, nn, fs):
@@ -146,41 +147,36 @@ def Cuantizar (xx, vf, bits):   #Revisar hay algo mal
             
          
     return x, delta_q
-    
-    
-    
-    
-    
 
 
-            
-
-
+    
 Signal0 = mi_funcion_sen(vmax, dc, ff, ph*0, nn, fs)
 # Signal1 = mi_funcion_cos(vmax, dc, fs, ph, nn, fs)
 
-XX = DFT(Signal0[1])
-XX_abs=np.absolute(XX)
-XX_ph=np.angle(XX)
-XX_df= np.arange(0.0, fs, fs/nn)
+# XX = DFT(Signal0[1])
+# XX_abs=np.absolute(XX)
+# XX_ph=np.angle(XX)
+# XX_df= np.arange(0.0, fs, fs/nn)
 
 xx = Signal0[1]
-xx_q, delta_q= Cuantizar(xx, vf, B_bits)
-error=xx_q-xx
-error_N=error/delta_q
 
+xx_q, q= Cuantizar(xx, vf, B_bits)
+
+error=xx_q-xx
+error_N=error/q #Error normalizo a q
 error_mean=np.mean(error)
 error_var=np.var(error)
+error_ac = sig.correlate( error, error)
 
 
 
 print('Media teorica: 0                     Estimación de la media: {:g}'.format(error_mean) )
-print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(delta_q**2/12, error_var) )
+print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(q**2/12, error_var) )
 
 
 
 
-XX_FFT=fft(Signal0[1])
+# XX_FFT=fft(Signal0[1])
 
 # Signal1 = mi_funcion_sen(vmax, dc, 1, ph*0.5, nn, fs)
 # Signal1 = mi_funcion_ramp(vmax, dc, ff, ph*62, nn, fs)
@@ -231,7 +227,7 @@ plt.show()
 # plt.ylabel('Volt [V]')
 # plt.axis('tight')
 # plt.grid(which='both', axis='both')
-plt.show()
+# plt.show()
 
 
 
