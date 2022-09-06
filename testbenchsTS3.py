@@ -25,12 +25,15 @@ from numpy.fft import fft
 #     return (tt, xx)
 vmax=1          #Amplitud Maxima [Volts]
 dc=0            #Valor de continua [Volts]
-ff=2 #Frecuencia en [Hz][]
+ff=1 #Frecuencia en [Hz][]
 ph=np.pi*1   #Fase [rad]
-nn=10  #Muestras del ADC
-fs=10#Frecuencia de muestreio del ADC [Hz]         
+nn=1000  #Muestras del ADC
+fs=1000#Frecuencia de muestreio del ADC [Hz]
+ff=fs/nn #Frecuencia en [Hz][]         
 Ts=1/fs
 delta_f=fs/nn
+B_bits=5
+vf=2
 
 
 def mi_funcion_sen(vmax, dc, ff, ph, nn, fs):
@@ -81,6 +84,7 @@ def mi_funcion_ramp(vmax, dc, ff, ph, nn, fs):
     
   
     
+         
     xx = np.zeros(N_delay)
     
     indices= np.arange(0,nn-N_delay)
@@ -113,27 +117,35 @@ def DFT (xx):
        
     for k in range(nn):
         for n in range(nn):
-           if n==0:
-               print("K= ",k)
            temp[k][n] = xx[n]*W_twiddle(k,n,nn)
            XX[k]+=temp[k][n]
            
-           print("Actual", temp[k][n])
-           print("Acumulado",XX[k])
+           # print("Actual", temp[k][n])
+           # print("Acumulado",XX[k])
        
-    return XX, temp
+    return XX
 
-def Cuantizar (x, vmax, bits):
+def Cuantizar (xx, vf, bits):   #Revisar hay algo mal
     
-    nn=np.size(x)
-    y=x
-    delta_q=2*vmax/2**(bits-1)
+    nn=np.size(xx)
+    x = np.zeros(nn)
+    delta_q= 2*vf/(2**bits-1)
+    lim_pos = delta_q*((2**(bits-1)-1))
+    lim_neg = 0-lim_pos
+    
     for n in range(nn):
-         x[n]=x[n]/delta_q
-         x[n]=(int)(x[n])
-         x[n]=x[n]*delta_q
+        
+        
+        x[n]=xx[n]/delta_q
+        x[n]=np.round(x[n])
+        x[n]=x[n]*delta_q
+        if x[n] >= lim_pos:
+            x[n]=lim_pos
+        elif x[n] <= lim_neg:
+            x[n]=lim_neg
+            
          
-    return x
+    return x, delta_q
     
     
     
@@ -144,16 +156,28 @@ def Cuantizar (x, vmax, bits):
             
 
 
-Signal0 = mi_funcion_sen(vmax, dc+1, ff, ph*0.5, nn, fs)
+Signal0 = mi_funcion_sen(vmax, dc, ff, ph*0, nn, fs)
 # Signal1 = mi_funcion_cos(vmax, dc, fs, ph, nn, fs)
 
-XX,xx = DFT(Signal0[1])
+XX = DFT(Signal0[1])
 XX_abs=np.absolute(XX)
 XX_ph=np.angle(XX)
 XX_df= np.arange(0.0, fs, fs/nn)
 
 xx = Signal0[1]
-xx_q= Cuantizar(xx, vmax, 16) 
+xx_q, delta_q= Cuantizar(xx, vf, B_bits)
+error=xx_q-xx
+error_N=error/delta_q
+
+error_mean=np.mean(error)
+error_var=np.var(error)
+
+
+
+print('Media teorica: 0                     Estimación de la media: {:g}'.format(error_mean) )
+print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(delta_q**2/12, error_var) )
+
+
 
 
 XX_FFT=fft(Signal0[1])
@@ -165,12 +189,14 @@ XX_FFT=fft(Signal0[1])
 
 
 # Para que funcione el qt -> %matplotlib qt5
-plt.close("all")
+# plt.close("all")
 plt.figure(1)
 # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
 # plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
-# plt.clf()
-plt.plot(Signal0[0],Signal0[1], 'g:x')
+plt.clf()
+plt.plot(Signal0[0],xx_q, 'g:x')
+plt.plot(Signal0[0],xx, 'b:+')
+plt.plot(Signal0[0],error, 'r:x')
 
 # plt.plot(Signal1[0],Signal1[1], 'r:')
 plt.xlabel('tiempo [s]')
@@ -179,32 +205,32 @@ plt.axis('tight')
 plt.grid(which='both', axis='both')
 plt.show()
 
-plt.figure(2)
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1])
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
-# plt.clf()
-plt.plot(XX_df,XX_abs, 'cX')
-# plt.plot(XX_df,XX_ph, 'rX')
+# plt.figure(2)
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
+# # plt.clf()
+# plt.plot(XX_df,XX_abs, 'cX')
+# # plt.plot(XX_df,XX_ph, 'rX')
 
-# plt.plot(Signal1[0],Signal1[1], 'r:')
-plt.xlabel('frecuencia [Hz]')
-plt.ylabel('Volt [V]')
-plt.axis('tight')
-plt.grid(which='both', axis='both')
-plt.show()
+# # plt.plot(Signal1[0],Signal1[1], 'r:')
+# plt.xlabel('frecuencia [Hz]')
+# plt.ylabel('Volt [V]')
+# plt.axis('tight')
+# plt.grid(which='both', axis='both')
+# plt.show()
 
-plt.figure(3)
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1])
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
-# plt.clf()
-# plt.plot(XX_df,XX_abs, 'bX')
-plt.plot(XX_df,XX_ph, 'mX')
+# plt.figure(3)
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
+# # plt.clf()
+# # plt.plot(XX_df,XX_abs, 'bX')
+# plt.plot(XX_df,XX_ph, 'mX')
 
-# plt.plot(Signal1[0],Signal1[1], 'r:')
-plt.xlabel('frecuencia [Hz]')
-plt.ylabel('Volt [V]')
-plt.axis('tight')
-plt.grid(which='both', axis='both')
+# # plt.plot(Signal1[0],Signal1[1], 'r:')
+# plt.xlabel('frecuencia [Hz]')
+# plt.ylabel('Volt [V]')
+# plt.axis('tight')
+# plt.grid(which='both', axis='both')
 plt.show()
 
 
