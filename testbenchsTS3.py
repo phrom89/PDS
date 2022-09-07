@@ -33,8 +33,9 @@ fs=1000#Frecuencia de muestreio del ADC [Hz]
 ff=fs/nn #Frecuencia en [Hz][]         
 Ts=1/fs
 delta_f=fs/nn
-B_bits=5
+B_bits=16
 vf=2
+
 
 
 def mi_funcion_sen(vmax, dc, ff, ph, nn, fs):
@@ -149,6 +150,11 @@ def Cuantizar (xx, vf, bits):   #Revisar hay algo mal
     return x, delta_q
 
 
+
+q=2*vf/(2**B_bits-1)
+noise = np.random.uniform(-q/2,q/2, size=nn)
+
+
     
 Signal0 = mi_funcion_sen(vmax, dc, ff, ph*0, nn, fs)
 # Signal1 = mi_funcion_cos(vmax, dc, fs, ph, nn, fs)
@@ -159,6 +165,7 @@ Signal0 = mi_funcion_sen(vmax, dc, ff, ph*0, nn, fs)
 # XX_df= np.arange(0.0, fs, fs/nn)
 
 xx = Signal0[1]
+xx +=noise
 
 xx_q, q= Cuantizar(xx, vf, B_bits)
 
@@ -187,8 +194,6 @@ print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(q
 # Para que funcione el qt -> %matplotlib qt5
 # plt.close("all")
 plt.figure(1)
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1])
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
 plt.clf()
 plt.plot(Signal0[0],xx_q, 'g:x')
 plt.plot(Signal0[0],xx, 'b:+')
