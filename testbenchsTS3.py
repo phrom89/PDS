@@ -33,7 +33,7 @@ fs=1000#Frecuencia de muestreio del ADC [Hz]
 ff=fs/nn #Frecuencia en [Hz][]         
 Ts=1/fs
 delta_f=fs/nn
-B_bits=16
+B_bits=4
 vf=2
 
 
@@ -167,10 +167,10 @@ Signal0 = mi_funcion_sen(vmax, dc, ff, ph*0, nn, fs)
 xx = Signal0[1]
 xx +=noise
 
-xx_q, q= Cuantizar(xx, vf, B_bits)
+xx_q, q1= Cuantizar(xx, vf, B_bits)
 
 error=xx_q-xx
-error_N=error/q #Error normalizo a q
+error_N=error/q1 #Error normalizo a q
 error_mean=np.mean(error)
 error_var=np.var(error)
 error_ac = sig.correlate( error, error)
@@ -178,7 +178,7 @@ error_ac = sig.correlate( error, error)
 
 
 print('Media teorica: 0                     Estimación de la media: {:g}'.format(error_mean) )
-print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(q**2/12, error_var) )
+print('Varianza teorica: {:g}         Estimación de la varianza: {:g}'.format(q1**2/12, error_var) )
 
 
 
@@ -204,7 +204,27 @@ plt.xlabel('tiempo [s]')
 plt.ylabel('Volt [V]')
 plt.axis('tight')
 plt.grid(which='both', axis='both')
+# plt.show()
+
+plt.figure(2)
+plt.clf()
+bins = 10
+plt.hist(error, bins=bins)
+plt.plot( np.array([-q1/2, -q1/2, q1/2, q1/2]), np.array([0, nn/bins, nn/bins, 0]), '--r' )
+plt.title( 'Ruido de cuantización para {:d} bits - V_R={:3.1f} V - q = {:3.3f} V'.format(B_bits, vf, q1))
+# plt.show()
+
+
+
+plt.figure(3)
+plt.clf()
+plt.plot(error_ac)
+plt.title( 'Secuencia de autocorrelación {:d} bits - VRef={:3.1f} V'.format(B_bits,vf))
+plt.ylabel('Autocorrelacion [#]')
+plt.xlabel('Demora [#]')
 plt.show()
+
+
 
 # plt.figure(2)
 # # plt.plot(Signal0[0], Signal0[1]-Signal1[1])

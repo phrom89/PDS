@@ -152,6 +152,8 @@ XX_abs=np.absolute(XX)
 XX_ph=np.angle(XX)
 XX_df= np.arange(0.0, fs, fs/nn)
 
+bfrec = XX_df <= fs/2
+
 xx = Signal0[1]
 xx_q= Cuantizar(xx, vmax, 16) 
 
@@ -183,7 +185,7 @@ plt.figure(2)
 # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
 # plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
 # plt.clf()
-plt.plot(XX_df,XX_abs, 'cX')
+plt.plot(XX_df[bfrec],XX_abs[bfrec], 'cX')
 # plt.plot(XX_df,XX_ph, 'rX')
 
 # plt.plot(Signal1[0],Signal1[1], 'r:')
@@ -193,19 +195,19 @@ plt.axis('tight')
 plt.grid(which='both', axis='both')
 plt.show()
 
-plt.figure(3)
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1])
-# plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
-# plt.clf()
-# plt.plot(XX_df,XX_abs, 'bX')
-plt.plot(XX_df,XX_ph, 'mX')
+# plt.figure(3)
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1])
+# # plt.plot(Signal0[0], Signal0[1]-Signal1[1]-Signal2[1])
+# # plt.clf()
+# # plt.plot(XX_df,XX_abs, 'bX')
+# plt.plot(XX_df,XX_ph, 'mX')
 
-# plt.plot(Signal1[0],Signal1[1], 'r:')
-plt.xlabel('frecuencia [Hz]')
-plt.ylabel('Volt [V]')
-plt.axis('tight')
-plt.grid(which='both', axis='both')
-plt.show()
+# # plt.plot(Signal1[0],Signal1[1], 'r:')
+# plt.xlabel('frecuencia [Hz]')
+# plt.ylabel('Volt [V]')
+# plt.axis('tight')
+# plt.grid(which='both', axis='both')
+# plt.show()
 
 
 
