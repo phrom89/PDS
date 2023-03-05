@@ -67,15 +67,15 @@ kn = 1
 
 # vmax=np.sqrt(2)
 
-reali=100
-amplitud=2
-zero_padd = 10
-Wbins=2
+reali=200
+amplitud=1
+zero_padd = 0
+Wbins=3
 
 ## El factor de proporcionalidad en la normalizacion es 
 Omega0 = np.pi/2
 
-fr = np.random.rand(reali, 1)
+fr = np.random.rand(1,reali).reshape(reali,1)
 fr=fr-0.5
 fr=(fr*4)*delta_f
 # fr = fr - fr    #Esto lo hago para ver que pasaria si tengo el valor exacto siembre. Mato la dispercion.
@@ -84,11 +84,14 @@ fr=(fr*4)*delta_f
 Omega1 = (Omega0 + fr*((2*np.pi)/nn))
 
 tt = np.arange(0.0, nn/fs, 1/fs)
+tt = tt.reshape(1, tt.shape[0])
 ff= np.arange(0.0, fs, fs/((zero_padd+1)*nn))
+ff = ff.reshape(1,ff.shape[0])
 
-arg= Omega1*fs*tt
-# xx_sen_mat=np.sin(arg)*amplitud
-xx_sen_mat=1
+
+arg = Omega1*fs*tt
+xx_sen_mat=np.sin(arg)*amplitud
+# xx_sen_mat=1
 
 
 
@@ -98,24 +101,17 @@ xx_sen_mat=1
 
 
 #Creo las distintas ventanas
-win_Rectangular=sig.windows.boxcar(nn)
-win_Bartlett=np.bartlett(nn)
-win_Hann=np.hanning(nn)
-win_Blackman=np.blackman(nn)
-win_Flattop=sig.windows.flattop(nn)
+win_Rectangular=sig.windows.boxcar(nn).reshape(1,nn)
+win_Bartlett=np.bartlett(nn).reshape(1,nn)
+win_Hann=np.hanning(nn).reshape(1,nn)
+win_Blackman=np.blackman(nn).reshape(1,nn)
+win_Flattop=sig.windows.flattop(nn).reshape(1,nn)
 
-# xx_rect=xx_sen_mat*win_Rectangular
-# xx_bart=xx_sen_mat*win_Bartlett
-# xx_hann=xx_sen_mat*win_Hann
-# xx_black=xx_sen_mat*win_Blackman
-# xx_flattop=xx_sen_mat*win_Flattop
-
-
-xx_rect=win_Rectangular.reshape(1,nn)
-xx_bart=win_Bartlett.reshape(1,nn)
-xx_hann=win_Hann.reshape(1,nn)
-xx_black=win_Blackman.reshape(1,nn)
-xx_flattop=win_Flattop.reshape(1,nn)
+xx_rect=xx_sen_mat*win_Rectangular
+xx_bart=xx_sen_mat*win_Bartlett
+xx_hann=xx_sen_mat*win_Hann
+xx_black=xx_sen_mat*win_Blackman
+xx_flattop=xx_sen_mat*win_Flattop
 
 
 xx_rect = np.append(xx_rect, np.zeros([reali,zero_padd*nn]),axis=-1)
@@ -187,7 +183,6 @@ Resultados = np.stack ((Sesgo, Varianza)).transpose()
 
 
 
-
 #Lo muestro en una tabla de valores
 df = DataFrame(Resultados, columns=['$s_a$', '$v_a$'],
                index=[  
@@ -240,10 +235,10 @@ plt.clf()
 rad=np.arange(0.0, 2*np.pi , (2*np.pi)/((zero_padd+1)*(nn)))
 
 plt.plot( rad, 10* np.log10(2*np.abs((XX_rect))**2), lw=2,label='rect')
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_bart))**2), lw=2,label='bart')
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_hann))**2), lw=2,label='hann')
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_black))**2), lw=2,label='black')
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_flattop))**2), lw=2,label='flattop')
+plt.plot( rad, 10* np.log10(2*np.abs((XX_bart))**2), lw=2,label='bart')
+plt.plot( rad, 10* np.log10(2*np.abs((XX_hann))**2), lw=2,label='hann')
+plt.plot( rad, 10* np.log10(2*np.abs((XX_black))**2), lw=2,label='black')
+plt.plot( rad, 10* np.log10(2*np.abs((XX_flattop))**2), lw=2,label='flattop')
 
 # plt.plot(tt, xx_rect[0,:])
 # plt.plot(tt, xx_bart[0,:])
