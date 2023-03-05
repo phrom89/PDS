@@ -24,7 +24,7 @@ import scipy.signal as sig
 
    
 #     return (tt, xx)
-vmax=1       #Amplitud Maxima [Volts]
+vmax=2          #Amplitud Maxima [Volts]
 dc=0            #Valor de continua [Volts]
 f0=1 #Frecuencia en [Hz][]
 ph=np.pi*1   #Fase [rad]
@@ -34,8 +34,8 @@ f0=fs/nn #Frecuencia en [Hz][]
 Ts=1/fs
 delta_f=fs/nn
 B_bits=4
-vf=2
-SNRa=25
+vf=vmax
+SNRa=60
 
 # cantidad de veces más densa que se supone la grilla temporal para tiempo "continuo"
 over_sampling = 4
@@ -44,13 +44,9 @@ fs_os=fs*over_sampling
 
 # datos del ruido
 q=vf/2**(B_bits-1)
-
-
-pot_ruido = np.power(vmax,2)/(2*np.power(10, SNRa/10))
-
 kn = 1
 # pot_ruido = q**2/12 * kn # Watts (potencia de la señal 1 W)
-
+pot_ruido = np.power(vf,2)/(2*np.power(10, SNRa/10))
 
 
 
@@ -156,6 +152,7 @@ xx_d = xx_sn_analog[::over_sampling]
 
 
 xx_q= Cuantizar(xx_d, vf, B_bits)
+
 noise_digital=xx_q-xx_d
 
 error_mean=np.mean(noise_digital)
@@ -188,6 +185,33 @@ bfrec_os = ff_os <= fs/2
 print('SNRa: {:g} '.format(np.log10(np.var(xx_analog)/np.var(noise_analog))*10))
 
 
+
+
+
+
+# XX_FFT=fft(Signal0[1])
+
+# Signal1 = mi_funcion_sen(vmax, dc, 1, ph*0.5, nn, fs)
+# Signal1 = mi_funcion_ramp(vmax, dc, f0, ph*62, nn, fs)
+# Signal2 = mi_funcion_ramp(vmax, dc, f0, ph*62, nn, fs)
+# Signal4 = mi_funcion_step(vmax, dc, f0, ph*0, nn, fs)
+
+
+# Para que funcione el qt -> %matplotlib qt5
+# plt.close("all")
+# plt.figure(1)
+
+# # plt.plot(Signal0[0],xx_q, 'g:x')
+# # plt.plot(Signal0[0],xx, 'b:+')
+# # plt.plot(Signal0[0],error, 'r:x')
+
+# # plt.plot(Signal1[0],Signal1[1], 'r:')
+# plt.xlabel('tiempo [s]')
+# plt.ylabel('Volt [V]')
+# plt.axis('tight')
+# plt.grid(which='both', axis='both')
+# # plt.show()
+
 plt.figure(1)
 plt.clf()
 plt.plot(tt, xx_q, lw=2, label='$ s_Q = Q_{B,V_F}\{s_R\} $ (ADC out)')
@@ -217,28 +241,28 @@ plt.figure(2)
 plt.clf()
 bfrec = ff <= fs/2
  
-Nnq_mean = np.mean(np.abs(N_digital*1/(2*nn))**2)
-# Nnq_mean = np.mean((1/(N_os)*np.abs(ft_xx_analog))**2)
-nNn_mean = np.mean(np.abs(N_analog*1/(2*N_os))**2)
- 
-plt.plot( ff[bfrec], 10* np.log10((2*np.abs(ft_xx_q[bfrec]*1/(nn))**2)), lw=2, label='$ s_Q = Q_{B,V_F}\{s_R\} $ (ADC out)' )
-plt.plot( ff_os[ff_os <= fs/2], 10* np.log10((2*np.abs(ft_xx_analog[ff_os <= fs/2]*1/(N_os))**2)) , color='orange', ls='dotted', label='$ s $ (analog)' )
-plt.plot( ff[bfrec], 10* np.log10((2*np.abs(ft_xx[bfrec]*1/(nn))**2)), ':g', label='$ s_R = s + n $  (ADC in)' )
+Nnq_mean = np.mean(np.abs(N_digital)**2)*1/nn
+nNn_mean = np.mean(np.abs(np.sqrt(1/N_os)*N_analog)**2)
 
-plt.plot( ff_os[ff_os <= fs/2], 10* np.log10(2*np.abs(N_analog[ff_os <= fs/2]*1/(2*N_os))**2), ':r')
-plt.plot( ff[bfrec], 10* np.log10(2*np.abs(N_digital[bfrec]*1/(2*nn))**2), ':c')
-plt.plot( np.array([ ff[bfrec][0], ff[bfrec][-1] ]), 10* np.log10(2*np.array([nNn_mean, nNn_mean]) ), '--r', label= '$ \overline{n} = $' + '{:3.1f} dB (piso analog.)'.format(10* np.log10(2*nNn_mean)) )
-plt.plot( np.array([ ff[bfrec][0], ff[bfrec][-1] ]), 10* np.log10(2*np.array([Nnq_mean, Nnq_mean]) ), '--c', label='$ \overline{n_Q} = $' + '{:3.1f} dB (piso digital)'.format(10* np.log10(2*Nnq_mean)) )
+ 
+# plt.plot( ff[bfrec], 10* np.log10(2*np.abs(np.sqrt(1/nn)*ft_xx_q[bfrec])**2) - db_norm_q[bfrec], lw=2, label='$ s_Q = Q_{B,V_F}\{s_R\} $ (ADC out)' )
+# plt.plot( ff_os[ff_os <= fs/2], 10* np.log10(2*np.abs(np.sqrt(1/N_os)*ft_xx_analog[ff_os <= fs/2])**2) , color='orange', ls='dotted', label='$ s $ (analog)' )
+# plt.plot( ff[bfrec], 10* np.log10(2*np.abs(np.sqrt(1/nn)*ft_xx[bfrec])**2), ':g', label='$ s_R = s + n $  (ADC in)' )
+
+plt.plot( ff_os[ff_os <= fs/2], 10* np.log10(np.abs(N_analog[ff_os <= fs/2])**2/np.abs(ft_xx_analog[1])**2), ':r')
+plt.plot( ff[bfrec], 10* np.log10(np.abs(np.sqrt(2/nn)*N_digital[bfrec]/nn)**2), ':c')
+plt.plot( np.array([ ff[bfrec][0], ff[bfrec][-1] ]), 10* np.log10(2* np.array([nNn_mean, nNn_mean]) ), '--r', label= '$ \overline{n} = $' + '{:3.1f} dB (piso analog.)'.format(10* np.log10(2* nNn_mean)) )
+plt.plot( np.array([ ff[bfrec][0], ff[bfrec][-1] ]), 10* np.log10(2* np.array([Nnq_mean, Nnq_mean]) ), '--c', label='$ \overline{n_Q} = $' + '{:3.1f} dB (piso digital)'.format(10* np.log10(2* Nnq_mean)) )
 plt.title('Señal muestreada por un ADC de {:d} bits - $\pm V_R= $ {:3.1f} V - q = {:3.3f} V'.format(B_bits, vf, q) )
 plt.ylabel('Densidad de Potencia [dB]')
 plt.xlabel('Frecuencia [Hz]')
 axes_hdl = plt.gca()
 axes_hdl.legend()
 # suponiendo valores negativos de potencia ruido en dB
-plt.ylim((1.5*np.min(10* np.log10(2* np.array([Nnq_mean, nNn_mean]))),10))
+# plt.ylim((1.5*np.min(10* np.log10(2* np.array([Nnq_mean, nNn_mean]))),10))
+# plt.ylim(-80,80)
 
-
-# plt.ylim((-125,10))
+# plt.ylim((1.5*np.min(10* np.log10(2* np.array([Nnq_mean, nNn_mean]))),10))
 
 
 # plt.figure(3)
