@@ -39,45 +39,106 @@ B_bits=4
 vf=2
 SNRa=25
 
-
-# cantidad de veces más densa que se supone la grilla temporal para tiempo "continuo"
-over_sampling = 4
-N_os = nn*over_sampling
-fs_os=fs*over_sampling
-
-# datos del ruido
-q=vf/2**(B_bits-1)
-
-
-pot_ruido = np.power(vmax,2)/(2*np.power(10, SNRa/10))
-
-kn = 1
-# pot_ruido = q**2/12 * kn # Watts (potencia de la señal 1 W)
-
-block = 1024 #760
+block = 4000
+# block = 4000
+# block = 2000
 
 mat_struct = sio.loadmat('ECG_TP4.mat')
 ecg_one_lead = mat_struct['ecg_lead']
-fraccion_ECG= ecg_one_lead[0:100000]
 
 
-fff, Pxx_den = sig.welch(fraccion_ECG,fs=fs, nperseg=block, axis = 0 )
+#Analizando la señal ecg completa, identificamos bloques relacionados al
+#paciente en reposo,donde el perido es mayor, en ejercico, donde el periodo
+#aumenta y el pico de exigencia, donde el periodo es máximo. 
+
+ecg_reposo= ecg_one_lead[0:100000]
+ecg_ejercicio= ecg_one_lead[450000:550000]
+ecg_pico= ecg_one_lead[750000:850000]
+
+
+#Calculamos la densidad espectral de potencia para cada caso.
+ff, Pxx_reposo = sig.welch(ecg_reposo,fs=fs, nperseg=block, axis = 0 )
+ff, Pxx_ejercicio = sig.welch(ecg_ejercicio,fs=fs, nperseg=block, axis = 0 )
+ff, Pxx_pico = sig.welch(ecg_pico,fs=fs, nperseg=block, axis = 0 )
+
+
+#Buscamos la frecuencia de corte para un bw que represente el 90%, 95% y 99% de potencia de la señal
+#para los tres casos.
+
+bw90 = 0.90
+bw95 = 0.95
+bw99 = 0.99
+
+index_Energia = np.where(np.cumsum(Pxx_reposo)/np.sum(Pxx_reposo) > bw90)[0]
+W_corte90rep = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_reposo)/np.sum(Pxx_reposo) > bw95)[0]
+W_corte95rep = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_reposo)/np.sum(Pxx_reposo) > bw99)[0]
+W_corte99rep = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_ejercicio)/np.sum(Pxx_ejercicio) > bw90)[0]
+W_corte90ej = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_ejercicio)/np.sum(Pxx_ejercicio) > bw95)[0]
+W_corte95ej = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_ejercicio)/np.sum(Pxx_ejercicio) > bw99)[0]
+W_corte99ej = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_pico)/np.sum(Pxx_pico) > bw90)[0]
+W_corte90pic = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_pico)/np.sum(Pxx_pico) > bw95)[0]
+W_corte95pic = ff[index_Energia[0]]
+
+index_Energia = np.where(np.cumsum(Pxx_pico)/np.sum(Pxx_pico) > bw99)[0]
+W_corte99pic = ff[index_Energia[0]]
 
 
 
-qrs = mat_struct['qrs_detections']
+
 
 
 plt.figure(0)
 plt.clf()
 
 
-plt.plot(fff, Pxx_den)
-
-
+plt.plot(ff, Pxx_reposo, label = 'reposo')
+plt.plot(ff, Pxx_ejercicio, label = 'ejercicio')
+plt.plot(ff, Pxx_pico, label = 'pico')
+plt.legend()
+plt.xlim(0,10)
 
 plt.show()
 
+plt.figure(1)
+plt.clf()
+
+
+plt.plot(ff, 10*np.log10(Pxx_reposo), label = 'reposo')
+plt.plot(ff, 10*np.log10(Pxx_ejercicio), label = 'ejercicio')
+plt.plot(ff, 10*np.log10(Pxx_pico), label = 'pico')
+plt.xlabel("Frecuencia [Hz]")
+plt.ylabel('Potencia [dB]')
+plt.xlim([0,200])
+plt.grid()
+plt.legend()
+
+plt.figure(2)
+plt.clf()
+
+plt.plot(ecg_reposo[3000:4500], label = 'reposo')
+plt.plot(ecg_ejercicio[3000:4500], label = 'ejercicio')
+plt.plot(ecg_pico[3000:4500], label = 'pico')
+
+#De medir la distancia entre picos, sacamos que la frecuencia cardiaca en cada caso esta en el orden de
+#1,32HZ para reposo, 1,89Hz para ejercicio y 2,26Hz para pico.
+
+plt.legend()
+
+plt.show()
 
 # index_energia = np.where(np.cumsum.)
 
@@ -87,172 +148,76 @@ plt.show()
 # # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_black))**2), lw=2)
 
 
+qrs_detections = mat_struct['qrs_detections']
 
 
-# # fr = np.random.rand(200, 1)
+# Viendo el grafico podemos ver que el latido va desde 0 a 600
+# qsr me da el pico del latido que se encuentra en la primera muestra en 250
+# por eso si me quiero quedar con toda la informacion desde el ecg selecciono desde
+# (pico - 250) hasta (pico + 350)
+inferior = 250
+sup = 350
 
-# # noise_analog = np.random.normal(0,np.sqrt(pot_ruido), N_os)
+latido = (ecg_one_lead[int(qrs_detections[0] - inferior):int(qrs_detections[0] + sup)])
+realizaciones = np.arange(len(qrs_detections))
+latidos = np.zeros([sup+inferior, qrs_detections.shape[0]])
 
+for i in realizaciones:
+    latidos[:,i] = ecg_one_lead[int(qrs_detections[i] - inferior):int(qrs_detections[i] + sup)].flatten()
+    latidos[:,i]  -= np.mean(latidos[:,i]) # le resto su valor medio para centrarlos
 
-# # vmax=np.sqrt(2)
-# zero_padd = 0
-# reali=10
-# amplitud=2
 
+plt.figure(3)
+plt.clf()
 
-# Omega0 = np.pi/2
+plt.plot(latidos)
+plt.autoscale(enable=True, axis='x', tight=True)
+plt.title("Latidos")
+plt.legend()
+plt.show()
 
-# fr = np.random.rand(reali, 1)
-# fr=fr-0.5
-# fr=fr*4
 
-# Omega1 = (Omega0 + fr*((2*np.pi)/nn))
+#Buscamos un espacio donde este bien definido cuales son normales y cuales ventriculares 
+#Lo encontramos en 241, 111000
+slicing_latidos = latidos[241, :]
 
-# tt = np.arange(0.0, nn/fs, 1/fs)
+# Los que estan por debajo de 11500 son latidos normales
+# Caso contrario pertenecen a la categoria de ventriculares
+filtro_normal = slicing_latidos < 11100 #vector booleano
+filtro_ventricular = slicing_latidos > 11100 #vector booleano
 
-# arg= Omega1*fs*tt
-# xx_sen_mat=np.sin(arg)*amplitud
 
-# #Creo las distintas ventanas
-# win_Rectangular=sig.windows.boxcar(nn)
-# win_Bartlett=np.bartlett(nn)
-# win_Hann=np.hanning(nn)
-# win_Blackman=np.blackman(nn)
-# win_Flattop=sig.windows.flattop(nn)
 
-# xx_rect=xx_sen_mat*win_Rectangular
-# xx_bart=xx_sen_mat*win_Bartlett
-# xx_hann=xx_sen_mat*win_Hann
-# xx_black=xx_sen_mat*win_Blackman
-# xx_flattop=xx_sen_mat*win_Flattop
 
+plt.figure(4)
+plt.clf()
 
+plt.plot(latidos[:,filtro_normal], 'b',alpha = 0.5, linewidth=3.0)
+plt.plot(latidos[:,filtro_ventricular], 'g', alpha = 0.5,  linewidth=3.0)
+plt.grid()
+plt.title("Latidos presentes en el registro agrupados por tipo")
+plt.xlabel('Tiempo [mSeg]')
+plt.ylabel('Amplitud')
 
-# XX_sen_mat=fft(xx_sen_mat/xx_sen_mat.shape[1], axis=-1)
+#Por ultimo buscamos graficar una latido ventricular y uno normal que representa la media de
+#lo que venimos haciendo
 
-# XX_rect = np.transpose(fft(xx_rect/xx_rect.shape[1], axis=-1))
-# XX_bart = np.transpose(fft(xx_bart/xx_bart.shape[1], axis=-1))
-# XX_hann = np.transpose(fft(xx_hann/xx_hann.shape[1], axis=-1))
-# XX_black = np.transpose(fft(xx_black/xx_black.shape[1], axis=-1))
-# XX_flattop = np.transpose(fft(xx_flattop/xx_flattop.shape[1], axis=-1))
+plt.figure(5)
+plt.clf()
 
-# XX_3d = np.stack ((XX_rect, XX_bart, XX_hann, XX_black, XX_flattop))
+lat_vent = np.mean(latidos[:,filtro_ventricular], axis = 1)
+lat_norm = np.mean(latidos[:,filtro_normal], axis = 1)
 
-# XX_sen_mat=fft(xx_sen_mat/xx_sen_mat.shape[1], axis=-1)   
+plt.plot(lat_vent, 'b', label = 'Ventricular',alpha = 0.5, linewidth=3.0)
+plt.plot(lat_norm, 'g', label = 'Normal', alpha = 0.5,  linewidth=3.0)
+plt.legend()
+plt.grid()
 
 
-# rad=np.arange(0.0, 2*np.pi, (2*np.pi)/((zero_padd+1)*nn))
+plt.show()
 
 
-# # est_amp = np.abs(XX[250, :])
 
-# # bfrec = ff1 <= fs
-
-# # ff= np.arange(0.0, fs, fs/((zero_padd+1)*nn))
-# # ff
-
-
-
-# # Pot_estimada= np.sum(2*np.abs(np.transpose(XX_sen_mat))**2, axis=0)
-
-# # sub_matriz= 
-
-
-# plt.figure(0)
-# plt.clf()
-
-# # Generar matriz de estimadores
-# # medianas=
-
-# # Sesgo = np.median(Estimadores) - amplitud 
-# # Varianza(np.mean())
-
-
-
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_3d[4,:,:]))**2), lw=2)
-# plt.plot( rad, 10* np.log10(2*np.abs((XX_3d[0,:,:]))**2), lw=2)
-
-# # axes_hdl = plt.gca()
-# # axes_hdl.legend()
-
-# # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_rect))**2), lw=2)
-# # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_bart))**2), lw=2)
-# # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_hann))**2), lw=2)
-# # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_black))**2), lw=2)
-# # plt.plot( rad, 10* np.log10(2*np.abs(np.transpose(XX_flattop))**2), lw=2)
-
-
-
-# plt.show()
-
-
-
-
-
-
-
-
-# # tt, xx_sen1 = mi_funcion_sen(vmax, dc, f0, ph*0, nn, fs)
-# # tt, xx_sen2 = mi_funcion_sen(vmax, dc, f0+0.1, ph*0, nn, fs)
-# # tt, xx_sen3 = mi_funcion_sen(vmax, dc, f0+0.25, ph*0, nn, fs)
-# # tt, xx_sen4 = mi_funcion_sen(vmax, dc, f0+0.5, ph*0, nn, fs)
-
-# # xx_sen1=xx_sen1/np.sqrt(np.var(xx_sen1))
-# # xx_sen2=xx_sen2/np.sqrt(np.var(xx_sen2))
-# # xx_sen3=xx_sen3/np.sqrt(np.var(xx_sen3))
-# # xx_sen4=xx_sen4/np.sqrt(np.var(xx_sen4))
-
-# # zero_padd = 10
-
-# # xx_sen1 = np.append(xx_sen1, np.zeros(zero_padd*nn))
-# # xx_sen2 = np.append(xx_sen2, np.zeros(zero_padd*nn)) 
-# # xx_sen3 = np.append(xx_sen3, np.zeros(zero_padd*nn)) 
-# # xx_sen4 = np.append(xx_sen4, np.zeros(zero_padd*nn))  
-
-# # XX_sen1=fft(xx_sen1)/xx_sen1.shape[0]
-# # XX_sen2=fft(xx_sen2)/xx_sen2.shape[0]
-# # XX_sen3=fft(xx_sen3)/xx_sen3.shape[0]
-# # XX_sen4=fft(xx_sen4)/xx_sen4.shape[0]
-
-# # ff1= np.arange(0.0, fs, fs/((zero_padd+1)*nn))
-# # # ff2= np.arange(0.0, fs, fs/nn)
-
-# # bfrec = ff1 <= fs
-
-# # Area1= np.sum(2*np.abs(XX_sen1[bfrec])**2)
-# # Area2= np.sum(2*np.abs(XX_sen2[bfrec])**2)
-# # Area3= np.sum(2*np.abs(XX_sen3[bfrec])**2)
-# # Area4= np.sum(2*np.abs(XX_sen4[bfrec])**2)
-
-
-# # plt.figure(1)
-# # plt.clf()
-
- 
-# # plt.plot( ff1[bfrec], (2*np.abs(XX_sen1[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0, Area1))
-# # plt.plot( ff1[bfrec], (2*np.abs(XX_sen2[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.1, Area2))
-# # plt.plot( ff1[bfrec], (2*np.abs(XX_sen3[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.25, Area3))
-# # plt.plot( ff1[bfrec], (2*np.abs(XX_sen4[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.5, Area4))
-# # # plt.plot(tt, xx_d, linestyle=':', color='green',marker='o', markersize=3, markerfacecolor='none', markeredgecolor='green', fillstyle='none', label='$ s_R = s + n $  (ADC in)')
-# # axes_hdl = plt.gca()
-# # axes_hdl.legend()
-
-
-# # plt.show()
-
-# # plt.figure(2)
-# # plt.clf()
-
-# # plt.plot( ff1[bfrec], 10* np.log10(2*np.abs(XX_sen1[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0, Area1))
-# # plt.plot( ff1[bfrec], 10* np.log10(2*np.abs(XX_sen2[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.25, Area2))
-# # plt.plot( ff1[bfrec], 10* np.log10(2*np.abs(XX_sen3[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.5, Area3))
-# # plt.plot( ff1[bfrec], 10* np.log10(2*np.abs(XX_sen4[bfrec])**2), lw=2, label='freq= {:3.3f} Area= {:3.3f}'.format(f0+0.75, Area4))
-# # # plt.plot(tt, xx_d, linestyle=':', color='green',marker='o', markersize=3, markerfacecolor='none', markeredgecolor='green', fillstyle='none', label='$ s_R = s + n $  (ADC in)')
-# # axes_hdl = plt.gca()
-# # axes_hdl.legend()
-
-
-# # plt.show()
 
 
 
